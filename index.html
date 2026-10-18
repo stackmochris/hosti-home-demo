@@ -1,0 +1,763 @@
+<!doctype html>
+<html lang="en-NZ">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<meta name="description" content="Clickable demo of Hosti @Home with invented receipts. Not a live product.">
+<title>Hosti @Home Demo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* Layout: one phone-width column on the ice ground. Dark hero card per screen, hairline cards, bottom tab bar.
+   Follows Hosti Product Design Language v2: Inter only, one filled verb per view, status as text, hairlines over shadows.
+   Dark values are derived for this demo (v2 specifies the light palette). */
+:root{
+  --ground:#f4f4f5; --surface:#ffffff; --ink:#0a0a0a; --meta:#737373; --hair:#e5e5e5;
+  --good:#2f9e5d; --attn:#d45b44;
+  --hero:#0a0a0a; --hero-ink:#fafafa; --hero-meta:#a3a3a3; --hero-track:#3a3a3a;
+  --verb-bg:#0a0a0a; --verb-ink:#ffffff; --tint:#ececee;
+  --font:'Inter',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --ground:#0a0a0a; --surface:#161616; --ink:#fafafa; --meta:#a3a3a3; --hair:#2a2a2a;
+    --good:#4cc582; --attn:#f07a62;
+    --hero:#232326; --hero-ink:#fafafa; --hero-meta:#a3a3a3; --hero-track:#4a4a4e;
+    --verb-bg:#fafafa; --verb-ink:#0a0a0a; --tint:#202022; color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --ground:#0a0a0a; --surface:#161616; --ink:#fafafa; --meta:#a3a3a3; --hair:#2a2a2a;
+  --good:#4cc582; --attn:#f07a62;
+  --hero:#232326; --hero-ink:#fafafa; --hero-meta:#a3a3a3; --hero-track:#4a4a4e;
+  --verb-bg:#fafafa; --verb-ink:#0a0a0a; --tint:#202022; color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;background:var(--ground);color:var(--ink);font-family:var(--font);font-size:14px;line-height:1.45;
+  font-variant-numeric:tabular-nums;padding-block:12px;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.app{max-width:440px;height:100%;min-height:620px;margin:0 auto;display:flex;flex-direction:column;gap:10px;--pad:0px}
+@media (min-width:520px){
+  .app{--pad:16px;border:1px solid var(--hair);border-radius:18px;overflow:hidden;padding-top:6px}
+}
+.top{padding:6px var(--pad) 0;display:flex;flex-direction:column;gap:10px}
+.brand{display:flex;justify-content:space-between;align-items:baseline;gap:12px;flex-wrap:wrap}
+.word{font-size:17px;font-weight:700;letter-spacing:-.01em}
+.tag{font-size:11px;font-weight:500;letter-spacing:.06em;text-transform:uppercase;color:var(--meta)}
+.seg{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.seg .sl{font-size:12px;color:var(--meta)}
+.seg .grp{display:inline-flex;border:1px solid var(--hair);border-radius:10px;overflow:hidden;background:var(--surface)}
+.seg button{font:500 13px var(--font);color:var(--meta);background:transparent;border:0;padding:7px 14px;cursor:pointer;min-height:34px}
+.seg button+button{border-left:1px solid var(--hair)}
+.seg button[aria-pressed="true"]{background:var(--tint);color:var(--ink);font-weight:600}
+main{flex:1;min-height:0;overflow-y:auto;padding:2px var(--pad) 14px;display:flex;flex-direction:column;gap:12px;outline:none}
+.tabs{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));border:1px solid var(--hair);background:var(--surface);border-radius:14px;margin:0 var(--pad) var(--pad);overflow:hidden}
+@media (min-width:520px){.tabs{margin-bottom:16px}}
+.tabs button{font:500 11px var(--font);color:var(--meta);background:transparent;border:0;padding:9px 2px 8px;display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;min-height:52px;box-shadow:inset 0 2px 0 transparent}
+.tabs button[aria-current="page"]{color:var(--ink);font-weight:600;box-shadow:inset 0 2px 0 var(--ink)}
+button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+.hero{background:var(--hero);color:var(--hero-ink);border-radius:14px;padding:18px 18px 16px;border:1px solid var(--hair)}
+.hero .lbl{font-size:12px;color:var(--hero-meta)}
+.big{font-size:36px;font-weight:700;letter-spacing:-.02em;line-height:1.1;margin:4px 0 2px}
+.hero .sub{font-size:13px;color:var(--hero-meta)}
+.track{position:relative;height:4px;background:var(--hero-track);border-radius:2px;margin:14px 0 12px}
+.track i{position:absolute;left:0;top:0;bottom:0;background:var(--hero-ink);border-radius:2px}
+.track b{position:absolute;top:-4px;width:2px;height:12px;background:var(--hero-ink);opacity:.55}
+.stat{font-size:13px;display:flex;gap:8px;align-items:center}
+.dot{width:8px;height:8px;border-radius:50%;flex:none;background:var(--meta);display:inline-block}
+.dot.good{background:var(--good)} .dot.attn{background:var(--attn)}
+.card{background:var(--surface);border:1px solid var(--hair);border-radius:12px;padding:16px;min-width:0}
+h2{font-size:17px;font-weight:600;margin:0 0 4px;letter-spacing:-.005em;text-wrap:balance}
+.eyebrow{font-size:11px;font-weight:500;color:var(--meta);text-transform:uppercase;letter-spacing:.07em;margin-bottom:6px}
+p{margin:0 0 8px} .meta{color:var(--meta);font-size:12px}
+.rows{display:flex;flex-direction:column}
+.row{display:flex;justify-content:space-between;gap:14px;align-items:baseline;padding:10px 0;border-top:1px solid var(--hair)}
+.row:first-child{border-top:0}
+.row .l{min-width:0;flex:1}
+.row .n{font-weight:600;font-size:15px;overflow-wrap:anywhere}
+.row .m{font-size:12px;color:var(--meta)}
+.row .v{font-weight:600;white-space:nowrap;text-align:right}
+.row .v small{display:block;font-weight:400;font-size:12px;color:var(--meta)}
+.btn{font:600 15px var(--font);border-radius:10px;padding:11px 16px;min-height:44px;border:1px solid var(--hair);background:transparent;color:var(--ink);cursor:pointer}
+.btn.verb{background:var(--verb-bg);color:var(--verb-ink);border-color:var(--verb-bg)}
+.btn.sm{font-size:13px;min-height:36px;padding:6px 12px;font-weight:500}
+.btn[disabled]{opacity:.4;cursor:not-allowed}
+.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.check{display:flex;align-items:center;gap:8px;font-size:13px;margin-top:10px}
+.check input{width:18px;height:18px;accent-color:var(--ink)}
+.bars{display:flex;flex-direction:column;gap:12px}
+.bar2 .t{display:flex;justify-content:space-between;gap:12px;font-size:13px}
+.bar2 .t b{font-weight:600}
+.bar2 .b{height:4px;background:var(--tint);border-radius:2px;margin-top:5px;overflow:hidden}
+.bar2 .b i{display:block;height:100%;background:var(--ink)}
+svg text{font-family:var(--font)}
+.chart{width:100%;height:auto;display:block}
+.legend{font-size:12px;color:var(--meta);margin-top:6px}
+.fb{display:grid;grid-template-columns:1fr auto;gap:6px 14px;font-size:14px;margin-top:8px}
+.fb .k{color:var(--meta)} .fb .v{font-weight:600;text-align:right}
+.fb .full{grid-column:1/-1;font-size:13px}
+.note{font-size:12px;color:var(--meta);margin-top:8px}
+input[type=text],input[type=number],input[type=search],select{font:400 16px var(--font);color:var(--ink);background:var(--surface);border:1px solid var(--hair);border-radius:10px;padding:9px 11px;min-height:44px;width:100%;min-width:0}
+.lines{display:flex;flex-direction:column;gap:10px;margin-top:8px}
+.ln{display:grid;grid-template-columns:minmax(0,1fr) 64px 84px 32px;gap:8px;align-items:start}
+.ln .mt{grid-column:1/-1;font-size:12px;color:var(--meta);margin-top:-4px}
+.ln button.x{background:transparent;border:0;color:var(--meta);font-size:20px;min-height:44px;cursor:pointer}
+.lab{font-size:12px;color:var(--meta);margin:10px 0 4px;display:block}
+.tbl{width:100%;border-collapse:collapse;font-size:13px}
+.tbl th{font-weight:500;color:var(--meta);text-align:left;font-size:11px;letter-spacing:.05em;text-transform:uppercase;padding:0 0 6px}
+.tbl td{padding:8px 0;border-top:1px solid var(--hair);vertical-align:top}
+.tbl td.r,.tbl th.r{text-align:right;white-space:nowrap}
+.tbl .raw{font-weight:600;overflow-wrap:anywhere}
+.tbl .mt{color:var(--meta);font-size:12px}
+.scroll{overflow-x:auto}
+.tier{border-top:1px solid var(--hair);padding:14px 0}
+.tier:first-of-type{border-top:0;padding-top:4px}
+.tier h3{margin:0;font-size:15px;font-weight:600;display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.tier .pr{font-weight:400;color:var(--meta);font-size:13px}
+.tier ul{list-style:none;margin:8px 0 0;padding:0;font-size:13px;display:grid;gap:3px}
+.tier li{display:flex;justify-content:space-between;gap:12px}
+.tier li span:first-child{color:var(--meta)}
+.here{font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(86px + env(safe-area-inset-bottom,0px));background:var(--verb-bg);color:var(--verb-ink);padding:10px 16px;border-radius:10px;font-size:13px;font-weight:500;max-width:min(360px,calc(100vw - 32px));z-index:20}
+.shelf{width:100%;height:auto;display:block;margin:8px 0}
+.pulse{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--ink);margin-right:8px;animation:p 1s ease-in-out infinite}
+@keyframes p{50%{opacity:.25}}
+@media (prefers-reduced-motion:reduce){.pulse{animation:none}}
+</style>
+
+</head>
+<body>
+<div class="app" id="app">
+  <header class="top" id="top"></header>
+  <main id="main" tabindex="-1"></main>
+  <nav class="tabs" id="tabs" aria-label="Sections"></nav>
+  <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+</div>
+
+<script>
+// ===== LOGIC START
+const DAY = 86400000;
+const dn = (y, m, d) => Math.floor(Date.UTC(y, m - 1, d) / DAY);
+const TODAY = dn(2026, 10, 18);
+const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const DOW = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+const toDate = n => new Date(n * DAY);
+const fmtDay = n => { const d = toDate(n); return DOW[d.getUTCDay()] + ' ' + d.getUTCDate() + ' ' + MONTHS[d.getUTCMonth()]; };
+const money = c => (c < 0 ? '-' : '') + '$' + (Math.abs(c) / 100).toLocaleString('en-NZ', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const money0 = c => (c < 0 ? '-' : '') + '$' + Math.round(Math.abs(c) / 100).toLocaleString('en-NZ');
+const BUDGET = 85000; // household-set monthly budget, in cents
+
+function rng(seed) {
+  return function () {
+    seed |= 0; seed = seed + 0x6D2B79F5 | 0;
+    let t = Math.imul(seed ^ seed >>> 15, 1 | seed);
+    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+    return ((t ^ t >>> 14) >>> 0) / 4294967296;
+  };
+}
+
+// Ported from functions/src/receipts/reconcile.ts (hosti-home). Dollars in, cents inside.
+function reconcileReceipt(lines, printedTotal) {
+  const toCents = d => Math.round(d * 100);
+  const linesTotalCents = lines.reduce((s, l) => s + toCents(l.lineTotal), 0);
+  const printedTotalCents = toCents(printedTotal);
+  const differenceCents = printedTotalCents - linesTotalCents;
+  const toleranceCents = Math.max(1, lines.length);
+  const suspectLines = [];
+  lines.forEach((l, i) => {
+    if (l.unitPrice == null) return;
+    const expected = Math.round(l.qty * l.unitPrice * 100);
+    if (Math.abs(expected - toCents(l.lineTotal)) > 1) suspectLines.push(i);
+  });
+  return {
+    reconciled: Math.abs(differenceCents) <= toleranceCents && suspectLines.length === 0,
+    linesTotalCents, printedTotalCents, differenceCents, toleranceCents, suspectLines
+  };
+}
+
+const CATS = ['Dairy & eggs','Bakery','Fruit & veg','Meat','Pantry','Frozen','Drinks','Household','Snacks & treats'];
+function I(id, name, cat, interval, price, raw, o) { return Object.assign({ id, name, cat, interval, price, raw, steps: [] }, o || {}); }
+const ITEMS = [
+  I('milk','Milk 2L','Dairy & eggs',4,460,'MLK STD 2L',{qty:2}),
+  I('eggs','Eggs 12 pack','Dairy & eggs',9,820,'EGGS SZ7 12PK',{steps:[[dn(2026,10,1),860]]}),
+  I('butter','Butter 500g','Dairy & eggs',21,700,'BUTTER SLTD 500G',{steps:[[dn(2026,9,10),760]]}),
+  I('yoghurt','Yoghurt 1kg','Dairy & eggs',8,590,'YOGHURT NAT 1KG'),
+  I('cheese','Cheese 1kg','Dairy & eggs',14,1250,'CHSE TASTY 1KG',{steps:[[dn(2026,9,20),1320]]}),
+  I('bread','Bread loaf','Bakery',4,360,'BREAD TOAST WMEAL',{qty:2}),
+  I('wraps','Wraps 8 pack','Bakery',14,520,'WRAPS 8PK'),
+  I('bananas','Bananas (per kg)','Fruit & veg',6,399,'BANANA LOOSE KG',{kg:true,q0:0.9,q1:0.6}),
+  I('apples','Apples 1.5kg','Fruit & veg',8,650,'APPLES BAG 1.5KG'),
+  I('potatoes','Potatoes 2kg','Fruit & veg',10,580,'POTATO WASHD 2KG'),
+  I('carrots','Carrots 1.5kg','Fruit & veg',10,340,'CARROTS 1.5KG'),
+  I('onions','Onions 1.5kg','Fruit & veg',14,420,'ONIONS BROWN 1.5KG'),
+  I('tomatoes','Tomatoes (per kg)','Fruit & veg',7,790,'TOMATO TRUSS KG',{kg:true,q0:0.5,q1:0.4}),
+  I('salad','Salad bag','Fruit & veg',7,450,'SALAD MIX 200G'),
+  I('chicken','Chicken thighs 1kg','Meat',7,1290,'CHKN THIGH 1KG',{qty:2,steps:[[dn(2026,10,8),1350]]}),
+  I('mince','Beef mince 500g','Meat',10,980,'BEEF MINCE 500G'),
+  I('sausages','Sausages 8 pack','Meat',14,860,'SAUSAGE BBQ 8PK'),
+  I('bacon','Bacon 250g','Meat',14,890,'BACON MID 250G'),
+  I('rice','Rice 5kg','Pantry',45,1450,'RICE LONG GRN 5KG'),
+  I('pasta','Pasta 500g','Pantry',16,230,'PASTA SPAG 500G'),
+  I('tintom','Tinned tomatoes 400g x2','Pantry',14,190,'TOM DICED 400G',{qty:2}),
+  I('oil','Cooking oil 1L','Pantry',50,990,'OIL CANOLA 1L'),
+  I('coffee','Ground coffee 200g','Pantry',21,1150,'COFFEE GRND 200G',{steps:[[dn(2026,8,15),1250]]}),
+  I('cereal','Cereal 700g','Pantry',12,660,'CEREAL FLAKES 700G'),
+  I('pb','Peanut butter 380g','Pantry',35,580,'PEANUT BTR 380G'),
+  I('frozenveg','Frozen veg 1kg','Frozen',14,480,'FRZ MIXED VEG 1KG'),
+  I('icecream','Ice cream 2L','Frozen',16,720,'ICE CREAM VAN 2L'),
+  I('juice','Juice 2L','Drinks',9,440,'JUICE ORNG 2L'),
+  I('tea','Tea bags 100','Drinks',35,610,'TEA BAGS 100PK'),
+  I('tp','Toilet paper 12 pack','Household',21,1290,'TOILET PPR 12PK'),
+  I('dish','Dishwasher tabs 40','Household',35,1400,'DISHWSH TABS 40'),
+  I('laundry','Laundry liquid 2L','Household',42,1750,'LAUNDRY LIQ 2L'),
+  I('bags','Rubbish bags 30','Household',40,750,'RUBBISH BAGS 30'),
+  I('broccoli','Broccoli head','Fruit & veg',7,450,'BROCCOLI HEAD'),
+  I('mandarins','Mandarins 1.5kg','Fruit & veg',10,590,'MANDARINS BAG 1.5KG'),
+  I('cucumber','Cucumber','Fruit & veg',7,220,'CUCUMBER TELEGRAPH'),
+  I('avocado','Avocados 3 pack','Fruit & veg',10,850,'AVOCADO 3PK'),
+  I('berries','Berries 400g','Fruit & veg',10,680,'BERRIES MIX 400G'),
+  I('ham','Sliced ham 400g','Meat',7,890,'HAM SLICED 400G'),
+  I('fish','Fish fillets 500g','Meat',14,1250,'FISH FILLET 500G'),
+  I('pork','Pork chops 700g','Meat',14,1190,'PORK CHOPS 700G'),
+  I('sauce','Pasta sauce 500g','Pantry',14,420,'PASTA SAUCE 500G',{qty:2}),
+  I('tuna','Tuna 4 pack','Pantry',16,1090,'TUNA CHUNK 4PK'),
+  I('crackers','Crackers 250g','Pantry',14,520,'CRACKERS 250G'),
+  I('bars','Muesli bars 12 pack','Pantry',12,750,'MUESLI BARS 12PK'),
+  I('oats','Rolled oats 1kg','Pantry',28,520,'OATS ROLLED 1KG'),
+  I('flour','Flour 1.5kg','Pantry',40,380,'FLOUR PLAIN 1.5KG'),
+  I('beans','Baked beans 420g','Pantry',14,260,'BKD BEANS 420G',{qty:2}),
+  I('pizza','Frozen pizza 2 pack','Frozen',14,1080,'FRZ PIZZA 2PK'),
+  I('sparkling','Sparkling water 12 pack','Drinks',14,1150,'SPARKLNG WTR 12PK'),
+  I('towels','Paper towels 6 pack','Household',30,1150,'PAPER TWL 6PK'),
+  I('dishliq','Dishwashing liquid 500ml','Household',30,450,'DISHWASH LIQ 500ML'),
+  I('handwash','Hand wash 500ml','Household',30,520,'HAND WASH 500ML'),
+  I('toothpaste','Toothpaste 110g','Household',45,480,'TOOTHPASTE 110G'),
+  I('x_choc','Chocolate block 200g','Snacks & treats',0,450,'CHOC BLOCK 200G',{extra:true}),
+  I('x_chips','Chips 175g','Snacks & treats',0,320,'CHIPS SALTED 175G',{extra:true}),
+  I('x_bisc','Biscuits 200g','Snacks & treats',0,380,'BISCUITS CHOC 200G',{extra:true}),
+  I('x_drink','Soft drink 1.5L','Snacks & treats',0,320,'SOFT DRK 1.5L',{extra:true}),
+  I('x_ice','Ice blocks 10 pack','Snacks & treats',0,590,'ICE BLOCKS 10PK',{extra:true})
+];
+const BY_ID = {}; ITEMS.forEach(i => BY_ID[i.id] = i);
+const CUSTOM = {}; // id -> {name, cat}, items the household named
+
+const priceAt = (it, day) => { let p = it.price; for (const [d, np] of it.steps) if (day >= d) p = np; return p; };
+function makeLine(it, day, R) {
+  const unit = priceAt(it, day);
+  let qty = 1;
+  if (it.kg) qty = Math.round((it.q0 + R() * it.q1) * 100) / 100;
+  else if (it.qty) qty = it.qty;
+  return { itemId: it.id, raw: it.raw, qty, unitPrice: unit, lineTotal: Math.round(qty * unit) };
+}
+function pickW(R, list) { let r = R(), a = 0; for (const [v, w] of list) { a += w; if (r < a) return v; } return list[list.length - 1][0]; }
+
+function generate() {
+  const R = rng(20261018);
+  const start = dn(2026, 7, 1), end = dn(2026, 10, 14); // last shop was a small top-up on Wed 14 Oct, the demo date is Sun 18 Oct
+  const regular = ITEMS.filter(i => !i.extra), extras = ITEMS.filter(i => i.extra);
+  const last = {}; regular.forEach(i => last[i.id] = start - Math.floor(R() * i.interval));
+  const out = []; let n = 1;
+  for (let day = start; day <= end; day++) {
+    const dow = toDate(day).getUTCDay();
+    const main = dow === 6, top = dow === 3;
+    if (!main && !top) continue;
+    if (top && day !== end && R() < 0.25) continue;
+    const store = pickW(R, main ? [['Supermarket A', .55], ['Supermarket B', .25], ['Supermarket C', .2]] : [['Supermarket B', .5], ['Supermarket C', .3], ['Supermarket A', .2]]);
+    const lines = [];
+    for (const it of regular) {
+      const since = day - last[it.id];
+      let buy;
+      if (main) buy = since >= it.interval * (0.8 + R() * 0.3);
+      else buy = it.interval <= 10 && since >= it.interval * 0.95 && R() < 0.85 && lines.length < 6;
+      if (buy) { lines.push(makeLine(it, day, R)); last[it.id] = day; }
+    }
+    const ne = main ? (R() < 0.5 ? 1 : (R() < 0.4 ? 2 : 0)) : (R() < 0.15 ? 1 : 0);
+    for (let k = 0; k < ne; k++) {
+      const it = extras[Math.floor(R() * extras.length)];
+      if (!lines.some(l => l.itemId === it.id)) lines.push(makeLine(it, day, R));
+    }
+    if (!lines.length) continue;
+    const src = R() < 0.55 ? 'share' : (R() < 0.55 ? 'photo' : 'email');
+    out.push({ id: 'r' + (n++), store, day, source: src, lines, printedTotal: lines.reduce((s, l) => s + l.lineTotal, 0) });
+  }
+  return out;
+}
+
+const median = a => { const s = [...a].sort((x, y) => x - y); const m = s.length >> 1; return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2; };
+
+// Usual items: at least 3 purchase days and a steady gap between them. Everything here is computed in code.
+function stats(receipts, asOf) {
+  const ev = {};
+  for (const r of receipts) {
+    if (r.day > asOf) continue;
+    for (const l of r.lines) if (l.itemId) (ev[l.itemId] = ev[l.itemId] || []).push({ day: r.day, total: l.lineTotal, unit: l.unitPrice, qty: l.qty });
+  }
+  const out = {};
+  for (const id in ev) {
+    const e = ev[id].sort((a, b) => a.day - b.day);
+    const days = [...new Set(e.map(x => x.day))];
+    if (days.length < 3) continue;
+    const gaps = []; for (let i = 1; i < days.length; i++) gaps.push(days[i] - days[i - 1]);
+    const med = median(gaps), mad = median(gaps.map(g => Math.abs(g - med)));
+    if (mad / med > 0.5) continue;
+    const lastEv = e[e.length - 1];
+    out[id] = { interval: Math.max(1, Math.round(med)), lastDay: lastEv.day, lastPaid: lastEv.total, count: days.length };
+  }
+  return out;
+}
+const nameOf = id => (BY_ID[id] ? BY_ID[id].name : (CUSTOM[id] ? CUSTOM[id].name : id));
+const catOf = id => (BY_ID[id] ? BY_ID[id].cat : (CUSTOM[id] ? CUSTOM[id].cat : 'Pantry'));
+
+// lead: also count items due within this many days. Items not bought for over twice their usual gap have lapsed and drop off.
+function dueList(receipts, asOfInclusive, evalDay, lead) {
+  lead = lead || 0;
+  const st = stats(receipts, asOfInclusive), due = [];
+  for (const id in st) {
+    const x = st[id], since = evalDay - x.lastDay;
+    if (since >= x.interval - lead && since <= 2 * x.interval + 7) due.push(Object.assign({ id, since, over: since - x.interval }, x));
+  }
+  due.sort((a, b) => b.over - a.over || nameOf(a.id).localeCompare(nameOf(b.id)));
+  return due;
+}
+
+function monthTotals(receipts) {
+  const t = { 6: 0, 7: 0, 8: 0, 9: 0 };
+  for (const r of receipts) { const m = toDate(r.day).getUTCMonth(); if (m in t) t[m] += r.printedTotal; }
+  return t;
+}
+function monthStats(receipts) {
+  const spent = receipts.filter(r => toDate(r.day).getUTCMonth() === 9 && r.day <= TODAY).reduce((s, r) => s + r.printedTotal, 0);
+  const day = toDate(TODAY).getUTCDate(), days = 31;
+  const recent = receipts.filter(r => r.day > TODAY - 28 && r.day <= TODAY).reduce((s, r) => s + r.printedTotal, 0);
+  const projected = spent + Math.round(recent / 28 * (days - day)); // spent so far plus your last 28 days' daily average for the rest of the month
+  return { spent, day, days, projected, budget: BUDGET };
+}
+function octLines(receipts) { return receipts.filter(r => toDate(r.day).getUTCMonth() === 9).flatMap(r => r.lines.map(l => Object.assign({ store: r.store }, l))); }
+
+function priceMoves(receipts) {
+  const ev = {};
+  for (const r of receipts) for (const l of r.lines) if (l.itemId && l.unitPrice != null) (ev[l.itemId] = ev[l.itemId] || []).push({ day: r.day, unit: l.unitPrice });
+  const out = [];
+  for (const id in ev) {
+    const e = ev[id].sort((a, b) => a.day - b.day), now = e[e.length - 1];
+    let prev = null;
+    for (let i = e.length - 2; i >= 0; i--) if (e[i].unit !== now.unit) { prev = e[i]; break; }
+    if (prev && TODAY - now.day <= 60) out.push({ id, from: prev.unit, to: now.unit, diff: now.unit - prev.unit, kg: !!(BY_ID[id] && BY_ID[id].kg) });
+  }
+  return out.sort((a, b) => Math.abs(b.diff) - Math.abs(a.diff));
+}
+
+// The shop against the household's own list: the usual items due on the day of the shop, from receipts before it.
+function shopFeedback(receipts, r) {
+  const prior = receipts.filter(x => x.day < r.day);
+  const due = dueList(prior, r.day - 1, r.day, 2);
+  const dueIds = new Set(due.map(d => d.id));
+  const suggested = due.reduce((s, d) => s + d.lastPaid, 0);
+  const bought = new Set(r.lines.map(l => l.itemId));
+  const outside = r.lines.filter(l => !dueIds.has(l.itemId));
+  const missed = due.filter(d => !bought.has(d.id));
+  return {
+    day: r.day, store: r.store, total: r.printedTotal, suggested, dueCount: due.length,
+    outsideTotal: outside.reduce((s, l) => s + l.lineTotal, 0), outside,
+    missed, missedTotal: missed.reduce((s, d) => s + d.lastPaid, 0)
+  };
+}
+function lastFullShop(receipts) {
+  const full = receipts.filter(r => r.lines.length >= 8).sort((a, b) => a.day - b.day);
+  return full[full.length - 1];
+}
+
+const tok = s => String(s).toLowerCase().replace(/[^a-z0-9 ]/g, ' ').split(/\s+/).filter(t => t.length > 1);
+function matchItem(text) {
+  const t = tok(text); if (!t.length) return null;
+  let best = null, bs = 0;
+  for (const it of ITEMS) {
+    const bag = new Set(tok(it.name + ' ' + it.raw));
+    let hit = 0;
+    for (const x of t) { if (bag.has(x)) hit += 1; else if ([...bag].some(b => b.length > 3 && x.length > 3 && (b.startsWith(x) || x.startsWith(b)))) hit += 0.6; }
+    const score = hit / t.length + hit / (bag.size * 10);
+    if (hit / t.length >= 0.6 && score > bs) { bs = score; best = it; }
+  }
+  return best;
+}
+
+function buildSample(receipts, misread) {
+  const due = dueList(receipts, TODAY, TODAY);
+  const bought = due.slice(0, Math.max(1, due.length - 2));
+  const lines = bought.map((d, i) => {
+    const it = BY_ID[d.id], unit = it.kg ? priceAt(it, TODAY) : (it.qty ? priceAt(it, TODAY) : priceAt(it, TODAY));
+    const bump = (i === 1) ? 30 : 0; // one price that moved since last time
+    const u = unit + bump;
+    const qty = it.kg ? 1.1 : (it.qty || 1);
+    return { itemId: d.id, raw: it.raw, qty, unitPrice: u, lineTotal: Math.round(qty * u) };
+  });
+  ['x_choc', 'x_drink'].forEach(id => { const it = BY_ID[id]; lines.push({ itemId: id, raw: it.raw, qty: 1, unitPrice: it.price, lineTotal: it.price }); });
+  lines.push({ itemId: null, raw: 'SLMN PINK 415G', qty: 1, unitPrice: 580, lineTotal: 580, unknown: true });
+  const printed = lines.reduce((s, l) => s + l.lineTotal, 0);
+  lines.forEach(l => l.read = l.lineTotal);
+  if (misread) { const k = lines.findIndex((l, i) => i >= 2 && l.lineTotal >= 500); if (k >= 0) lines[k].read = lines[k].lineTotal + 180; }
+  return { store: 'Supermarket A', day: TODAY, source: 'share', lines, printed, notBought: due.slice(bought.length) };
+}
+function checkDraft(d) {
+  return reconcileReceipt(d.lines.map(l => ({ rawName: l.raw, qty: l.qty, unitPrice: l.unitPrice / 100, lineTotal: l.read / 100 })), d.printed / 100);
+}
+// ===== LOGIC END
+
+const $ = s => document.querySelector(s);
+const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const SRC = { share: 'Shared from the store app', photo: 'Photo of paper receipt', email: 'Forwarded email', manual: 'Typed in' };
+const PLAN = {
+  free: { name: 'Free', reads: 0, photos: 0, members: '1' },
+  home: { name: 'Home', reads: 20, photos: 10, members: '1' },
+  plus: { name: 'Plus', reads: 60, photos: 30, members: 'Up to 5' }
+};
+const S = {
+  tab: 'spend', plan: 'home', receipts: generate(), status: {}, flow: { kind: null }, used: { reads: 7, photos: 2 },
+  misread: false, photo: { stage: 'idle', res: {} }, toastT: 0
+};
+
+function toast(msg) {
+  const t = $('#toast'); t.textContent = msg; t.hidden = false; clearTimeout(S.toastT);
+  S.toastT = setTimeout(() => { t.hidden = true; }, 2600);
+}
+
+const ICON = {
+  spend: '<path d="M5 20V10M12 20V4M19 20v-7"/>',
+  due: '<path d="M9 6h11M9 12h11M9 18h11M4.5 6h.01M4.5 12h.01M4.5 18h.01"/>',
+  add: '<path d="M12 5v14M5 12h14"/>',
+  pantry: '<rect x="4" y="4" width="16" height="16" rx="2"/><path d="M4 12h16M12 4v16"/>',
+  plan: '<path d="M20.5 12.5l-8 8-9-9V3.5h8z"/><circle cx="8" cy="8" r="1"/>'
+};
+const TABS = [['spend', 'Spend'], ['due', 'Due now'], ['add', 'Add'], ['pantry', 'Pantry'], ['plan', 'Plan']];
+
+function renderChrome() {
+  $('#top').innerHTML = `<div class="brand"><span class="word">Hosti @Home</span><span class="tag">Demo · invented receipts</span></div>
+    <div class="seg"><span class="sl">View as</span><span class="grp" role="group" aria-label="View as plan">${['free', 'home', 'plus'].map(p =>
+      `<button data-act="plan" data-v="${p}" aria-pressed="${S.plan === p}">${PLAN[p].name}</button>`).join('')}</span></div>`;
+  $('#tabs').innerHTML = TABS.map(([k, l]) => `<button data-act="tab" data-v="${k}" ${S.tab === k ? 'aria-current="page"' : ''}>
+    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICON[k]}</svg>${l}</button>`).join('');
+}
+
+// ---------- Spend ----------
+function chartSvg(totals, m) {
+  const vals = [totals[6], totals[7], totals[8], m.projected];
+  const mx = Math.max(...vals, m.budget) * 1.12, base = 128, h = 100;
+  const y = v => base - v / mx * h;
+  const labels = ['Jul', 'Aug', 'Sep', 'Oct'], cx = [44, 124, 204, 284];
+  let s = `<svg class="chart" viewBox="0 0 328 150" role="img" aria-label="Monthly grocery spend for July to October against a ${money0(m.budget)} budget">`;
+  s += `<line x1="8" x2="320" y1="${base}" y2="${base}" stroke="var(--hair)" stroke-width="1"/>`;
+  s += `<line x1="8" x2="320" y1="${y(m.budget)}" y2="${y(m.budget)}" stroke="var(--meta)" stroke-width="1" stroke-dasharray="4 4"/>`;
+  [totals[6], totals[7], totals[8]].forEach((v, i) => {
+    s += `<rect x="${cx[i] - 20}" y="${y(v)}" width="40" height="${base - y(v)}" rx="3" fill="var(--ink)"/>`;
+    s += `<text x="${cx[i]}" y="${y(v) - 6}" text-anchor="middle" font-size="11" font-weight="600" fill="var(--ink)" stroke="var(--surface)" stroke-width="3" paint-order="stroke">${money0(v)}</text>`;
+  });
+  s += `<rect x="${cx[3] - 20}" y="${y(m.projected)}" width="40" height="${base - y(m.projected)}" rx="3" fill="none" stroke="var(--meta)" stroke-dasharray="3 3"/>`;
+  s += `<rect x="${cx[3] - 20}" y="${y(m.spent)}" width="40" height="${base - y(m.spent)}" rx="3" fill="var(--ink)"/>`;
+  s += `<text x="${cx[3]}" y="${y(m.projected) - 6}" text-anchor="middle" font-size="11" font-weight="600" fill="var(--ink)" stroke="var(--surface)" stroke-width="3" paint-order="stroke">${money0(m.projected)}</text>`;
+  labels.forEach((l, i) => { s += `<text x="${cx[i]}" y="145" text-anchor="middle" font-size="11" fill="var(--meta)">${l}</text>`; });
+  return s + '</svg>';
+}
+
+function screenSpend() {
+  const R = S.receipts, m = monthStats(R), diff = m.projected - m.budget, over = diff > 0;
+  const fillPct = Math.min(100, m.spent / m.budget * 100), pacePct = m.day / m.days * 100;
+  const fbR = lastFullShop(R), fb = fbR ? shopFeedback(R, fbR) : null;
+  const ol = octLines(R), cat = {}, store = {};
+  ol.forEach(l => { const c = catOf(l.itemId); cat[c] = (cat[c] || 0) + l.lineTotal; store[l.store] = (store[l.store] || 0) + l.lineTotal; });
+  const catRows = Object.entries(cat).sort((a, b) => b[1] - a[1]), catMax = catRows[0] ? catRows[0][1] : 1;
+  const stRows = Object.entries(store).sort((a, b) => b[1] - a[1]);
+  const moves = priceMoves(R).slice(0, 5);
+  const totals = monthTotals(R);
+  return `
+  <section class="hero" aria-label="October spend">
+    <div class="lbl">October so far</div>
+    <div class="big">${money(m.spent)}</div>
+    <div class="sub">Day ${m.day} of ${m.days} · Budget ${money0(m.budget)} a month</div>
+    <div class="track" aria-hidden="true"><i style="width:${fillPct}%"></i><b style="left:${pacePct}%"></b></div>
+    <div class="stat"><span class="dot ${over ? 'attn' : 'good'}"></span><span>On pace for ${money0(m.projected)} · ${money0(Math.abs(diff))} ${over ? 'over' : 'under'} budget</span></div>
+  </section>
+  ${fb ? `<section class="card"><div class="eyebrow">Your last full shop · ${esc(fmtDay(fb.day))} · ${esc(fb.store)}</div>
+    <h2>${money(fb.total)} against a usual list of ${money(fb.suggested)}</h2>
+    <div class="fb">
+      <span class="k">Usual list that day (${fb.dueCount} items, last paid)</span><span class="v">${money(fb.suggested)}</span>
+      <span class="k">This shop</span><span class="v">${money(fb.total)}</span>
+      <span class="k">Items outside the list (${fb.outside.length})</span><span class="v">${money(fb.outsideTotal)}</span>
+      ${fb.outside.length ? `<span class="full meta">${fb.outside.map(l => esc(nameOf(l.itemId) || l.raw) + ' ' + money(l.lineTotal)).join(' · ')}</span>` : ''}
+      <span class="k">On the list, not bought (${fb.missed.length})</span><span class="v">${money(fb.missedTotal)}</span>
+      ${fb.missed.length ? `<span class="full meta">${fb.missed.map(d => esc(nameOf(d.id)) + ' ' + money(d.lastPaid)).join(' · ')}</span>` : ''}
+    </div></section>` : ''}
+  <section class="card"><div class="eyebrow">Monthly spend</div>
+    ${chartSvg(totals, m)}
+    <div class="legend">Dashed line is your ${money0(m.budget)} budget. October's dashed bar is the pace to month end, based on your last 28 days.</div></section>
+  <section class="card"><div class="eyebrow">Where October went</div>
+    <div class="bars">${catRows.map(([c, v]) => `<div class="bar2"><div class="t"><span>${esc(c)}</span><b>${money(v)}</b></div><div class="b"><i style="width:${v / catMax * 100}%"></i></div></div>`).join('')}</div></section>
+  <section class="card"><div class="eyebrow">Spent by store in October</div>
+    <div class="rows">${stRows.map(([s, v]) => `<div class="row"><span class="n">${esc(s)}</span><span class="v">${money(v)}</span></div>`).join('')}</div></section>
+  <section class="card"><div class="eyebrow">Prices that moved on your items</div>
+    <div class="rows">${moves.map(p => `<div class="row"><div class="l"><div class="n">${esc(nameOf(p.id))}</div><div class="m">${money(p.from)} to ${money(p.to)}${p.kg ? ' per kg' : ''}</div></div><span class="v">${p.diff > 0 ? '+' : '-'}${money(Math.abs(p.diff))}</span></div>`).join('') || '<p class="meta">No price changes on your items in the last 60 days.</p>'}</div></section>
+  <p class="note">All figures come from ${R.length} invented receipts. Totals, averages and intervals are computed in code.</p>`;
+}
+
+// ---------- Due now ----------
+function dueItems() { return dueList(S.receipts, TODAY, TODAY); }
+function screenDue() {
+  const due = dueItems(), active = due.filter(d => S.status[d.id] !== 'have'), aside = due.filter(d => S.status[d.id] === 'have');
+  const total = active.reduce((s, d) => s + d.lastPaid, 0);
+  const row = d => {
+    const st = S.status[d.id];
+    const when = d.over === 0 ? 'Due today' : 'Due ' + d.over + (d.over === 1 ? ' day' : ' days') + ' ago';
+    return `<div class="row"><div class="l"><div class="n">${esc(nameOf(d.id))}</div>
+      <div class="m">${when} · last bought ${esc(fmtDay(d.lastDay))} · usually every ${d.interval} days${st === 'low' ? ' · confirmed low' : ''}</div></div>
+      <div class="v">${money(d.lastPaid)}<small>last paid</small><button class="btn sm" data-act="have" data-v="${d.id}" style="margin-top:6px">Still have</button></div></div>`;
+  };
+  return `
+  <section class="hero"><div class="lbl">Next shop, if you buy the usual</div>
+    <div class="big">${money(total)}</div>
+    <div class="sub">${active.length} items due · priced at what you last paid</div></section>
+  <section class="card"><div class="eyebrow">Your usual, due now</div>
+    <div class="rows">${active.map(row).join('') || '<p class="meta">Nothing is due. Add a shop and this list updates.</p>'}</div>
+    <div class="actions"><button class="btn verb" data-act="copy">Copy list</button></div></section>
+  ${aside.length ? `<section class="card"><div class="eyebrow">Set aside</div><div class="rows">${aside.map(d => `<div class="row"><div class="l"><div class="n">${esc(nameOf(d.id))}</div><div class="m">You have some</div></div><button class="btn sm" data-act="undo" data-v="${d.id}">Put back</button></div>`).join('')}</div></section>` : ''}
+  <p class="note">Prices are what you paid, not a catalogue price. An item is usual after 3 purchases with a steady gap between them.</p>`;
+}
+
+// ---------- Add ----------
+function emptyManual() {
+  return { store: 'Supermarket B', till: '21.59', lines: [{ name: 'Milk', qty: '1', total: '4.60' }, { name: 'Bread', qty: '1', total: '3.60' }, { name: 'Bananas', qty: '1', total: '4.79' }, { name: 'Eggs', qty: '1', total: '8.60' }] };
+}
+function manualCheck(m) {
+  const lines = m.lines.filter(l => l.name.trim() || l.total).map(l => ({ rawName: l.name, qty: parseFloat(l.qty) || 1, unitPrice: null, lineTotal: parseFloat(l.total) || 0 }));
+  const till = parseFloat(m.till);
+  if (!lines.length || isNaN(till)) return null;
+  return reconcileReceipt(lines, till);
+}
+function checkBox(c) {
+  if (!c) return '<div class="stat"><span class="dot"></span><span>Add at least one line and the till total.</span></div>';
+  const ok = c.reconciled;
+  return `<div class="fb"><span class="k">Lines add up to</span><span class="v">${money(c.linesTotalCents)}</span><span class="k">Printed total</span><span class="v">${money(c.printedTotalCents)}</span><span class="k">Difference</span><span class="v">${money(c.differenceCents)}</span></div>
+    <div class="stat" style="margin-top:10px"><span class="dot ${ok ? 'good' : 'attn'}"></span><span>${ok ? 'Reconciled. This shop can be added.' : 'Does not add up yet. Check the lines against the receipt.'}</span></div>`;
+}
+function matchLabel(name) {
+  if (!name.trim()) return '';
+  const it = matchItem(name);
+  return it ? 'Matched to ' + it.name : 'New item. It joins your list once you buy it again.';
+}
+
+function screenAdd() {
+  const f = S.flow, p = PLAN[S.plan], canRead = p.reads > 0;
+  if (f.kind === 'read') return screenRead();
+  if (f.kind === 'manual') return screenManual();
+  return `
+  <section class="card"><h2>Add a shop</h2>
+    <p class="meta">Free if you type it in. Paid if we read it for you.</p>
+    <div class="rows">
+      <div class="row"><span class="n">Type it in</span><span class="m">All plans, including Free</span></div>
+      <div class="row"><span class="n">Share a receipt from a store app</span><span class="m">Home and Plus</span></div>
+      <div class="row"><span class="n">Photo of a paper receipt</span><span class="m">Home and Plus</span></div>
+      <div class="row"><span class="n">Forwarded email receipt</span><span class="m">Home and Plus</span></div>
+    </div>
+    ${canRead ? `<div class="check"><input type="checkbox" id="mis" data-act="mis" ${S.misread ? 'checked' : ''}><label for="mis">Simulate a misread line to see the total check catch it</label></div>` : ''}
+    <div class="actions">
+      ${canRead ? '<button class="btn verb" data-act="read">Read a sample receipt</button><button class="btn" data-act="manual">Type it in</button>'
+        : '<button class="btn verb" data-act="manual">Type it in</button><button class="btn" disabled>Read a sample receipt</button>'}
+    </div>
+    <p class="note">${canRead ? `Receipts read this month: ${S.used.reads} of ${p.reads}. The receipt is a sample built from your usual list. No retailer is contacted.` : 'Reading receipts is on Home and Plus. On Free you type the shop in, and spend, trends and the due-now list all work from what you type.'}</p>
+  </section>`;
+}
+
+function screenRead() {
+  const f = S.flow;
+  if (f.stage === 'reading') return `<section class="card"><h2><span class="pulse"></span>Reading the receipt</h2><p class="meta">Finding the store, the date, each line and the printed total. Then the total check runs.</p></section>`;
+  const d = f.draft, c = checkDraft(d);
+  const rows = d.lines.map((l, i) => {
+    const flagged = c.suspectLines.includes(i);
+    const mt = l.unknown ? `<div class="mt">Not matched yet</div>` : `<div class="mt">${esc(nameOf(l.itemId))}${l.qty !== 1 ? ' · ' + l.qty + (BY_ID[l.itemId] && BY_ID[l.itemId].kg ? ' kg' : ' x') : ''}</div>`;
+    return `<tr><td><div class="raw">${flagged ? '<span class="dot attn"></span> ' : ''}${esc(l.raw)}</div>${mt}${flagged ? `<div class="mt">Read as ${money(l.read)}. Quantity times price is ${money(Math.round(l.qty * l.unitPrice))}. <button class="btn sm" data-act="fix" data-v="${i}">Use ${money(Math.round(l.qty * l.unitPrice))}</button></div>` : ''}</td><td class="r">${money(l.read)}</td></tr>`;
+  }).join('');
+  const unk = d.lines.find(l => l.unknown);
+  return `
+  <section class="card"><div class="eyebrow">${esc(SRC[d.source])} · ${esc(d.store)} · ${esc(fmtDay(d.day))}</div>
+    <h2>${d.lines.length} lines read</h2>
+    <div class="scroll"><table class="tbl"><thead><tr><th>Receipt line</th><th class="r">Amount</th></tr></thead><tbody>${rows}</tbody></table></div>
+    ${unk ? `<label class="lab" for="unk">What is "${esc(unk.raw)}"? Your answer teaches the item list.</label><input type="text" id="unk" data-act="unk" value="${esc(f.unkName || 'Tinned salmon')}">` : ''}
+  </section>
+  <section class="card"><div class="eyebrow">Total check</div>${checkBox(c)}
+    <div class="actions"><button class="btn verb" data-act="commit-read" ${c.reconciled ? '' : 'disabled'}>Add to my shops</button><button class="btn" data-act="cancel">Start over</button></div>
+    <p class="note">A shop only lands when its lines add up to the printed total, within a cent a line.</p></section>`;
+}
+
+function screenManual() {
+  const m = S.flow.manual;
+  const lines = m.lines.map((l, i) => `<div class="ln">
+      <input type="text" id="mn${i}" data-m="name" data-i="${i}" value="${esc(l.name)}" placeholder="Item" aria-label="Item ${i + 1}">
+      <input type="number" id="mq${i}" data-m="qty" data-i="${i}" value="${esc(l.qty)}" min="0" step="0.01" inputmode="decimal" aria-label="Quantity ${i + 1}">
+      <input type="number" id="mt${i}" data-m="total" data-i="${i}" value="${esc(l.total)}" min="0" step="0.01" inputmode="decimal" aria-label="Line total ${i + 1}">
+      <button class="x" data-act="rmline" data-v="${i}" aria-label="Remove line ${i + 1}">&times;</button>
+      <div class="mt" id="mm${i}">${esc(matchLabel(l.name))}</div></div>`).join('');
+  const c = manualCheck(m);
+  return `
+  <section class="card"><h2>Type in a shop</h2><p class="meta">Quantity, then the line total from the receipt. The till total is checked against the lines.</p>
+    <label class="lab" for="mstore">Store</label>
+    <select id="mstore" data-m="store">${['Supermarket A', 'Supermarket B', 'Supermarket C', 'Other'].map(s => `<option ${m.store === s ? 'selected' : ''}>${esc(s)}</option>`).join('')}</select>
+    <div class="lines">${lines}</div>
+    <div class="actions"><button class="btn sm" data-act="addline">Add a line</button></div>
+    <label class="lab" for="mtill">Till total ($)</label>
+    <input type="number" id="mtill" data-m="till" value="${esc(m.till)}" min="0" step="0.01" inputmode="decimal">
+  </section>
+  <section class="card"><div class="eyebrow">Total check</div><div id="mcheck">${checkBox(c)}</div>
+    <div class="actions"><button class="btn verb" id="mgo" data-act="commit-manual" ${c && c.reconciled ? '' : 'disabled'}>Add to my shops</button><button class="btn" data-act="cancel">Cancel</button></div></section>`;
+}
+function refreshManual() {
+  const m = S.flow.manual, c = manualCheck(m);
+  $('#mcheck').innerHTML = checkBox(c);
+  $('#mgo').disabled = !(c && c.reconciled);
+}
+
+function commit(shop) {
+  // Items the household named become part of their own list.
+  S.receipts.push(shop);
+  shop.lines.forEach(l => { delete S.status[l.itemId]; });
+  S.flow = { kind: null };
+  S.tab = 'spend';
+  render(true);
+  toast('Added. Spend and Due now are updated.');
+}
+
+// ---------- Pantry ----------
+const SEEN = new Set(['butter', 'rice', 'pasta', 'tintom', 'oil', 'coffee', 'cereal', 'pb', 'cheese', 'tea', 'juice', 'frozenveg', 'icecream', 'bacon', 'sausages', 'wraps', 'onions', 'potatoes', 'sauce', 'sparkling', 'beans', 'crackers']);
+function shelfSvg(seenNames) {
+  const box = (x, y, t) => `<rect x="${x}" y="${y}" width="58" height="26" rx="3" fill="var(--tint)" stroke="var(--hair)"/><text x="${x + 29}" y="${y + 16}" text-anchor="middle" font-size="8.5" fill="var(--ink)">${esc(t.slice(0, 11))}</text>`;
+  const pan = seenNames.slice(0, 6), fr = seenNames.slice(6, 10);
+  let s = `<svg class="shelf" viewBox="0 0 328 130" role="img" aria-label="Illustration of a pantry photo and a fridge photo">`;
+  s += `<rect x="1" y="14" width="158" height="115" rx="8" fill="none" stroke="var(--hair)"/><rect x="169" y="14" width="158" height="115" rx="8" fill="none" stroke="var(--hair)"/>`;
+  s += `<text x="8" y="10" font-size="10" fill="var(--meta)">Pantry photo</text><text x="176" y="10" font-size="10" fill="var(--meta)">Fridge photo</text>`;
+  pan.forEach((t, i) => { s += box(8 + (i % 2) * 70, 24 + Math.floor(i / 2) * 32, t); });
+  fr.forEach((t, i) => { s += box(176 + (i % 2) * 70, 24 + Math.floor(i / 2) * 32, t); });
+  return s + '</svg>';
+}
+function screenPantry() {
+  const p = PLAN[S.plan];
+  if (p.photos === 0) return `<section class="card"><h2>Pantry and fridge check</h2>
+    <p>A photo of the pantry and the fridge answers one question for each item that is due: is it visible?</p>
+    <p class="meta">Photo checks are on Home (10 a month) and Plus (30 a month). On Free, use "Still have" on the Due now list.</p></section>`;
+  const due = dueItems().filter(d => S.status[d.id] !== 'have' || S.photo.res[d.id]);
+  if (S.photo.stage === 'idle') return `<section class="card"><h2>Pantry and fridge check</h2>
+    <p>A photo answers one question for each item that is due: is it visible? Pack sizes and dates come from your receipts.</p>
+    <div class="actions"><button class="btn verb" data-act="photo">Use sample photos</button></div>
+    <p class="note">Photo checks this month: ${S.used.photos} of ${p.photos}. The demo uses a prepared result. The real check reads your photo.</p></section>`;
+  const seen = due.filter(d => S.photo.res[d.id] === 'seen'), cant = due.filter(d => S.photo.res[d.id] !== 'seen');
+  return `<section class="card"><div class="eyebrow">Sample photos (illustration)</div>${shelfSvg(seen.map(d => nameOf(d.id)))}
+    <p class="meta">${seen.length} due items are visible. ${cant.length} are not.</p></section>
+  <section class="card"><div class="eyebrow">Can't see these. Do you have any?</div>
+    <div class="rows">${cant.map(d => {
+      const st = S.status[d.id];
+      return `<div class="row"><div class="l"><div class="n">${esc(nameOf(d.id))}</div><div class="m">${st === 'low' ? 'Confirmed low · on the next shop' : (st === 'have' ? 'You have some · off the list for now' : 'Last bought ' + esc(fmtDay(d.lastDay)) + ' · usually every ' + d.interval + ' days')}</div></div>
+      ${st ? '' : `<div style="display:flex;gap:6px"><button class="btn sm" data-act="low" data-v="${d.id}">Ran out</button><button class="btn sm" data-act="have" data-v="${d.id}">I have some</button></div>`}</div>`;
+    }).join('') || '<p class="meta">Every due item is visible.</p>'}</div></section>
+  <section class="card"><div class="eyebrow">Seen, so off the list for now</div>
+    <div class="rows">${seen.map(d => `<div class="row"><div class="n">${esc(nameOf(d.id))}</div><span class="m">Visible</span></div>`).join('') || '<p class="meta">None.</p>'}</div>
+    <p class="note">Nothing goes on the list from a photo alone. Low is decided from your receipts plus your confirmation.</p>
+    <div class="actions"><button class="btn" data-act="photo-reset">Run it again</button></div></section>`;
+}
+
+// ---------- Plan ----------
+function screenPlan() {
+  const cur = S.plan;
+  const tier = (k, price, rows) => `<div class="tier"><h3><span>${PLAN[k].name}${cur === k ? ' <span class="here">· Viewing as</span>' : ''}</span><span class="pr">${price}</span></h3><ul>${rows.map(r => `<li><span>${r[0]}</span><span>${r[1]}</span></li>`).join('')}</ul></div>`;
+  return `<section class="card"><h2>Free if you type it in. Paid if we read it for you.</h2>
+    <p class="meta">The math is done in code on every plan. Only reading receipts and photos costs us model time, so that is what the paid plans cover.</p>
+    ${tier('free', '$0', [['Typed-in shops', 'Yes'], ['Spend, trends, shop feedback', 'Yes'], ['Due-now list', 'Yes'], ['Receipts read', '0'], ['Photo checks', '0'], ['Members', '1']])}
+    ${tier('home', '$6.99 a month or $59.99 a year', [['Typed-in shops', 'Yes'], ['Receipts read a month', '20'], ['Photo checks a month', '10'], ['Members', '1']])}
+    ${tier('plus', '$11.99 a month or $99.99 a year', [['Typed-in shops', 'Yes'], ['Receipts read a month', '60'], ['Photo checks a month', '30'], ['Members', 'Up to 5'], ['Bank feed, store totals only', 'Yes']])}
+  </section>
+  <section class="card"><div class="eyebrow">Trial</div>
+    <p>14 days with Plus limits. The fortnight report lands on day 13, before the first charge. After the trial, a household that does not pay drops to Free. History is kept and typing in carries on. Cancel in two taps.</p>
+    <p class="note">Prices are working assumptions inside the $4.99 to $19.99 band. This page is a demo. Nothing here is live.</p></section>`;
+}
+
+// ---------- Shell ----------
+function render(top) {
+  renderChrome();
+  const m = $('#main');
+  const scr = { spend: screenSpend, due: screenDue, add: screenAdd, pantry: screenPantry, plan: screenPlan }[S.tab];
+  m.innerHTML = scr();
+  if (top) m.scrollTop = 0;
+}
+
+document.addEventListener('click', e => {
+  const t = e.target.closest('[data-act]'); if (!t) return;
+  const a = t.dataset.act, v = t.dataset.v;
+  if (a === 'tab') { S.tab = v; return render(true); }
+  if (a === 'plan') { S.plan = v; S.flow = { kind: null }; S.photo = { stage: 'idle', res: {} }; return render(); }
+  if (a === 'have') { S.status[v] = 'have'; return render(); }
+  if (a === 'undo') { delete S.status[v]; if (S.photo.res[v] === 'seen') delete S.photo.res[v]; return render(); }
+  if (a === 'low') { S.status[v] = 'low'; return render(); }
+  if (a === 'copy') {
+    const due = dueItems().filter(d => S.status[d.id] !== 'have');
+    const txt = 'Your usual, due now\n' + due.map(d => nameOf(d.id) + ' ' + money(d.lastPaid)).join('\n') + '\nNext shop: ' + money(due.reduce((s, d) => s + d.lastPaid, 0));
+    const ok = () => toast('List copied.'), fail = () => toast('Copy was blocked here. Select the list to copy it.');
+    try { navigator.clipboard.writeText(txt).then(ok, fail); } catch (_) { fail(); }
+    return;
+  }
+  if (a === 'mis') { S.misread = t.checked; return; }
+  if (a === 'read') {
+    S.flow = { kind: 'read', stage: 'reading', draft: buildSample(S.receipts, S.misread), unkName: 'Tinned salmon' };
+    render(true);
+    setTimeout(() => { if (S.flow.kind === 'read') { S.flow.stage = 'review'; render(true); } }, 1100);
+    return;
+  }
+  if (a === 'fix') { const l = S.flow.draft.lines[+v]; l.read = Math.round(l.qty * l.unitPrice); return render(); }
+  if (a === 'cancel') { S.flow = { kind: null }; return render(true); }
+  if (a === 'commit-read') {
+    const d = S.flow.draft, c = checkDraft(d); if (!c.reconciled) return;
+    const unkName = (S.flow.unkName || 'Tinned salmon').trim() || 'Tinned salmon';
+    const lines = d.lines.map(l => {
+      if (!l.unknown) return { itemId: l.itemId, raw: l.raw, qty: l.qty, unitPrice: l.unitPrice, lineTotal: l.read };
+      const hit = matchItem(unkName), id = hit ? hit.id : 'u_' + unkName.toLowerCase().replace(/[^a-z0-9]+/g, '_');
+      if (!hit) CUSTOM[id] = { name: unkName, cat: 'Pantry' };
+      return { itemId: id, raw: l.raw, qty: l.qty, unitPrice: l.unitPrice, lineTotal: l.read };
+    });
+    S.used.reads += 1;
+    return commit({ id: 'r' + (S.receipts.length + 1), store: d.store, day: d.day, source: d.source, lines, printedTotal: lines.reduce((s, l) => s + l.lineTotal, 0) });
+  }
+  if (a === 'manual') { S.flow = { kind: 'manual', manual: emptyManual() }; return render(true); }
+  if (a === 'addline') { S.flow.manual.lines.push({ name: '', qty: '1', total: '' }); return render(); }
+  if (a === 'rmline') { S.flow.manual.lines.splice(+v, 1); return render(); }
+  if (a === 'commit-manual') {
+    const m = S.flow.manual, c = manualCheck(m); if (!c || !c.reconciled) return;
+    const lines = m.lines.filter(l => l.name.trim() && parseFloat(l.total) > 0).map(l => {
+      const qty = parseFloat(l.qty) || 1, total = Math.round(parseFloat(l.total) * 100), hit = matchItem(l.name);
+      let id;
+      if (hit) id = hit.id; else { id = 'u_' + l.name.trim().toLowerCase().replace(/[^a-z0-9]+/g, '_'); CUSTOM[id] = CUSTOM[id] || { name: l.name.trim(), cat: 'Pantry' }; }
+      return { itemId: id, raw: l.name.trim().toUpperCase(), qty, unitPrice: Math.round(total / qty), lineTotal: total };
+    });
+    return commit({ id: 'r' + (S.receipts.length + 1), store: m.store, day: TODAY, source: 'manual', lines, printedTotal: Math.round(parseFloat(m.till) * 100) });
+  }
+  if (a === 'photo') {
+    const res = {}; dueItems().forEach(d => { res[d.id] = SEEN.has(d.id) ? 'seen' : 'cant'; });
+    Object.keys(res).forEach(id => { if (res[id] === 'seen') S.status[id] = 'have'; });
+    S.photo = { stage: 'done', res }; S.used.photos += 1; return render();
+  }
+  if (a === 'photo-reset') { Object.keys(S.photo.res).forEach(id => { if (S.status[id]) delete S.status[id]; }); S.photo = { stage: 'idle', res: {} }; return render(); }
+});
+
+document.addEventListener('input', e => {
+  const t = e.target;
+  if (t.dataset.act === 'unk') { S.flow.unkName = t.value; return; }
+  if (!t.dataset.m || !S.flow.manual) return;
+  const m = S.flow.manual, k = t.dataset.m;
+  if (t.dataset.i !== undefined) {
+    const i = +t.dataset.i; m.lines[i][k] = t.value;
+    if (k === 'name') { const el = document.getElementById('mm' + i); if (el) el.textContent = matchLabel(t.value); }
+  } else m[k] = t.value;
+  refreshManual();
+});
+document.addEventListener('change', e => { if (e.target.dataset.act === 'mis') S.misread = e.target.checked; });
+
+render(true);
+</script>
+</body>
+</html>
