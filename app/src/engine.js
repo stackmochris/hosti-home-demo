@@ -41,10 +41,12 @@ export function parseQty(s) {
 // ---------- the receipt checks ----------
 // Total check (D-005). Lines must add up to the printed total, within 1 cent per line for rounding.
 // A line with a unit price must also equal qty x unit price within 1 cent, or it is flagged as a suspect line.
-export function reconcile(lines, printedTotal) {
+// opts.cash: NZ cash totals are rounded to the nearest 10c, so a cash receipt may differ from its lines by up to 5c.
+// Discount lines are negative amounts and count in the sum like any other line.
+export function reconcile(lines, printedTotal, opts = {}) {
   const linesTotal = lines.reduce((s, l) => s + l.total, 0);
   const difference = printedTotal - linesTotal;
-  const tolerance = Math.max(1, lines.length);
+  const tolerance = opts.cash ? Math.max(5, lines.length) : Math.max(1, lines.length);
   const suspect = [];
   lines.forEach((l, i) => {
     if (l.unit == null) return;
@@ -65,7 +67,7 @@ export function checkGst(total, printedGst) {
 // Item count check. Many receipts print "N SUBTOTAL" where N is the number of items counting quantity.
 export function checkItemCount(lines, printedCount) {
   if (printedCount == null) return null;
-  const counted = lines.reduce((s, l) => s + (Number.isInteger(l.qty) ? l.qty : 1), 0);
+  const counted = lines.filter((l) => l.total == null || l.total > 0).reduce((s, l) => s + (Number.isInteger(l.qty) ? l.qty : 1), 0);
   return { ok: counted === printedCount, counted, printed: printedCount };
 }
 
@@ -238,6 +240,38 @@ export function categorySplit(receipts, today, windowDays = 30) {
   }
   const rows = Object.entries(by).map(([cat, cents]) => ({ cat, cents })).sort((a, b) => b.cents - a.cents);
   return { rows, covered, all };
+}
+
+// ---------- the week ----------
+// The week is the main unit for a household. A week starts on startDow (0 = Sunday ... 6 = Saturday, default Monday).
+export const weekStart = (day, startDow = 1) => day - ((parts(day).dow - startDow + 7) % 7);
+// Monthly budget scaled to a 7-day week, using the days in the month the week starts in.
+export function weekBudget(monthly, day) { if (!monthly) return null; const p = parts(day); return Math.round(monthly * 7 / daysInMonth(p.y, p.m)); }
+const between = (rs, a, b) => rs.filter((r) => r.day >= a && r.day <= b);
+export function weekView(receipts, today, monthlyBudget, startDow = 1) {
+  const s = weekStart(today, startDow), e = s + 6, ps = s - 7, pe = s - 1;
+  const cur = between(receipts, s, Math.min(e, today)), prev = between(receipts, ps, pe);
+  const spent = cur.reduce((a, r) => a + r.total, 0), prevSpent = prev.reduce((a, r) => a + r.total, 0);
+  const budget = weekBudget(monthlyBudget, s), prevBudget = weekBudget(monthlyBudget, ps);
+  return {
+    start: s, end: e, dayOf: today - s + 1, spent, shops: cur.length, budget, left: budget == null ? null : budget - spent,
+    prev: { start: ps, end: pe, spent: prevSpent, shops: prev.length, budget: prevBudget, diff: prevBudget == null ? null : prevBudget - prevSpent },
+  };
+}
+// The closed-week moment: last week had at least one shop, a budget was set, spend was within it, and it has not been marked yet.
+export const weekCelebration = (view, celebratedStart) => view.prev.shops >= 1 && view.prev.budget != null && view.prev.spent <= view.prev.budget && celebratedStart !== view.prev.start;
+
+// Rename an item, or merge it into another when the new name matches one the household already has.
+export function renameItem(receipts, fromKey, newName) {
+  const to = itemKey(newName);
+  if (!to) return 0;
+  let existing = null;
+  for (const r of receipts) for (const l of r.lines || []) if (l.item === to && to !== fromKey) existing = l;
+  let n = 0;
+  for (const r of receipts) for (const l of r.lines || []) if (l.item === fromKey) {
+    l.item = to; l.name = existing ? existing.name : newName.trim(); if (existing) l.cat = existing.cat; n++;
+  }
+  return n;
 }
 
 // ---------- totals mode: value without line items ----------

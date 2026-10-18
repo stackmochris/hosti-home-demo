@@ -1,10 +1,10 @@
 // Local storage for Hosti @Home. Everything stays on this device. Nothing is sent anywhere.
 // Data: localStorage (small, structured). Photos: IndexedDB (blobs).
-import { todayNum } from './engine.js';
+import { todayNum, renameItem as renameInReceipts } from './engine.js';
 
 const KEY = 'hosti-home.v1';
 const blank = () => ({
-  v: 1, onboarded: false, budget: 0, receipts: [], coupons: [], entry: [], created: todayNum(),
+  v: 1, onboarded: false, budget: 0, receipts: [], coupons: [], entry: [], created: todayNum(), weekStart: 1, celebrated: 0, itemPrefs: {}, ticks: {},
 });
 let state = blank();
 const subs = new Set();
@@ -22,6 +22,14 @@ export const subscribe = (f) => { subs.add(f); return () => subs.delete(f); };
 export const uid = (p = 'r') => p + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
 
 export function addReceipt(r) { state.receipts.push(r); state.receipts.sort((a, b) => a.day - b.day); save(); }
+export function updateReceipt(r) { const i = state.receipts.findIndex((x) => x.id === r.id); if (i >= 0) state.receipts[i] = r; else state.receipts.push(r); state.receipts.sort((a, b) => a.day - b.day); save(); }
+export function renameItem(fromKey, newName) {
+  const n = renameInReceipts(state.receipts, fromKey, newName);
+  const to = newName ? newName.toLowerCase() : '';
+  if (state.itemPrefs[fromKey]) { state.itemPrefs[to && to !== fromKey ? to : fromKey] = state.itemPrefs[fromKey]; }
+  save(); return n;
+}
+export function setItemPref(key, pref) { if (pref) state.itemPrefs[key] = pref; else delete state.itemPrefs[key]; save(); }
 export function removeReceipt(id) {
   const r = state.receipts.find((x) => x.id === id);
   if (r && r.photoId) deletePhoto(r.photoId);
