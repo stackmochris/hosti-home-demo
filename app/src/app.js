@@ -2,6 +2,9 @@
 // The week is the main unit. Detail sits behind "Tell me more". Figures only, no verdict words (D-004).
 import * as E from './engine.js';
 import * as S from './store.js';
+import * as Auth from './auth.js';
+import * as Cloud from './cloud.js';
+import { appLog } from './security.js';
 import { sampleReceipts } from './sample.js';
 import { readReceiptBarcode } from './barcode.js';
 
@@ -56,7 +59,7 @@ function confetti() {
   const c = h('canvas', { class: 'confetti', 'aria-hidden': 'true' }); document.body.append(c);
   const dpr = devicePixelRatio || 1; c.width = innerWidth * dpr; c.height = innerHeight * dpr;
   const g = c.getContext('2d'); g.scale(dpr, dpr);
-  const cols = ['#2f9e5d', '#7fe3a8', '#c47b2b', '#d45b44', '#0f3d2e', '#f2c14e'];
+  const cols = ['#d4a017', '#f5d76a', '#c47b2b', '#d45b44', '#6e5208', '#f2c14e'];
   const ps = Array.from({ length: 80 }, () => ({ x: innerWidth / 2 + (Math.random() - 0.5) * 90, y: innerHeight * 0.3, vx: (Math.random() - 0.5) * 10, vy: -Math.random() * 10 - 3, w: 5 + Math.random() * 6, hh: 3 + Math.random() * 4, col: cols[Math.floor(Math.random() * cols.length)], rot: Math.random() * 6 }));
   let t0; const step = (t) => {
     t0 = t0 || t; const k = (t - t0) / 1900; g.clearRect(0, 0, innerWidth, innerHeight);
@@ -73,6 +76,7 @@ function render() {
   document.querySelectorAll('.sheet').forEach((s) => s.remove());
   $app.replaceChildren();
   document.querySelector('nav')?.remove();
+  if (!Auth.currentSession()) { $app.append(loginScreen()); return; }
   if (!st.onboarded) { $app.append(onboarding()); return; }
   const screens = { spend: spendScreen, due: dueScreen, add: addScreen, wallet: walletScreen, more: moreScreen };
   $app.append(screens[route]());
@@ -118,6 +122,48 @@ function dueFor(st, t) {
   return E.dueList(st.receipts, t).filter((d) => { const p = prefs[d.id]; return !(p && (p.stopped || (p.snoozeUntil && p.snoozeUntil > t))); });
 }
 const fmtDec = (c) => (c / 100).toFixed(2);
+
+// ---------- login (session stays until sign out) ----------
+function loginScreen() {
+  let mode = 'create';
+  const email = h('input', { id: 'email', type: 'email', autocomplete: 'username', placeholder: 'you@example.com' });
+  const password = h('input', { id: 'password', type: 'password', autocomplete: 'current-password', placeholder: '8 or more characters' });
+  const name = h('input', { id: 'dname', autocomplete: 'name', placeholder: 'Optional' });
+  const err = h('div');
+  const form = h('div');
+  const showErr = (m) => err.replaceChildren(m ? h('div', { class: 'check bad', role: 'alert' }, m) : null);
+  const run = async () => {
+    showErr('');
+    const payload = { email: email.value, password: password.value, displayName: name.value };
+    const res = mode === 'create' ? await Auth.createAccount(payload) : await Auth.signIn(payload);
+    if (!res.ok) { showErr(res.error); return; }
+    S.load(res.session.uid);
+    appLog('auth.signed-in');
+    toast(mode === 'create' ? 'Account saved on this device' : 'Signed in');
+    go();
+  };
+  const draw = () => {
+    form.replaceChildren(
+      h('div', { class: 'seg', role: 'group', 'aria-label': 'Account' },
+        [['create', 'Create account'], ['in', 'Sign in']].map(([m, l]) => h('button', { 'aria-pressed': mode === m, onclick: () => { mode = m; draw(); } }, l))),
+      h('div', { class: 'card', style: 'margin-top:12px' },
+        h('label', { for: 'email', style: 'margin-top:0' }, 'Email'), email,
+        h('label', { for: 'password' }, 'Password'), password,
+        mode === 'create' ? h('label', { for: 'dname' }, 'Name') : null,
+        mode === 'create' ? name : null,
+        err),
+      h('div', { class: 'actions' }, h('button', { class: 'fill', onclick: run }, mode === 'create' ? 'Create account' : 'Sign in')));
+  };
+  draw();
+  return h('div', { class: 'rise' },
+    h('div', { class: 'head' }, h('h1', null, 'Hosti @Home')),
+    h('p', { class: 'meta' }, 'Sign in to keep this household on this device. You stay signed in until you sign out.'),
+    h('div', { class: 'card' },
+      h('h3', null, 'Where your shops live'),
+      h('p', { class: 'meta', style: 'margin-top:6px' }, 'This founder demo stores shops, coupons and photos in this phone or browser, under your account. The packaged app will open the same sign-in and keep household data in your Firestore account.')),
+    form,
+    h('p', { class: 'meta small', style: 'margin-top:12px' }, 'No supermarket login. Nothing is sent to a server in this version.'));
+}
 
 // ---------- onboarding ----------
 function onboarding() {
@@ -602,8 +648,15 @@ function csvExport() {
   toast('Spreadsheet file saved');
 }
 function moreScreen() {
-  const st = S.get(), wrap = h('div');
+  const st = S.get(), wrap = h('div'), sess = Auth.currentSession();
   A(wrap, h('div', { class: 'head' }, h('h1', null, 'More')));
+  A(wrap, h('div', { class: 'card' },
+    h('h3', null, 'Signed in'),
+    h('p', { class: 'meta', style: 'margin-top:6px' }, sess.email + (sess.displayName ? ' · ' + sess.displayName : '')),
+    h('p', { class: 'meta small' }, Cloud.LIVE
+      ? 'Household data is in your Firestore account.'
+      : 'Founder demo: data is on this device, in the browser origin for this account. Packaged app: Firestore household ' + sess.householdId + '.'),
+    h('div', { class: 'actions' }, h('button', { onclick: () => { Auth.signOut(); S.load(null); location.hash = '#spend'; render(); toast('Signed out. Shops stay on this device until you erase.'); } }, 'Sign out'))));
   const bud = h('input', { id: 'mb', inputmode: 'decimal', value: st.budget ? (st.budget / 100).toString() : '', placeholder: 'Not set' });
   const wk = h('select', { id: 'wk', onchange: (e) => { st.weekStart = +e.target.value; S.save(); toast('Week start saved'); } }, DAYS.map(([v, n]) => h('option', { value: v, selected: +v === st.weekStart ? true : null }, n)));
   A(wrap, h('div', { class: 'card' }, h('label', { for: 'mb', style: 'margin-top:0' }, 'Monthly grocery budget'), bud,
