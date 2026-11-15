@@ -1,10 +1,10 @@
 # Hosti @Home demo
 
-A clickable demo of Hosti @Home. It runs entirely in the browser on invented receipts.
+This repository contains the [original clickable mockup](index.html) and the [founder web demo](app/index.html). Demo prices and plans are working assumptions.
 
-- Nothing is live. No retailer is contacted and nothing you type is stored or sent anywhere.
-- Store names are generic (Supermarket A, B and C) and every figure is made up.
-- Prices and plans shown are working assumptions.
-- The design follows Hosti Product Design Language v2.
+## Find the source for a task
 
-One file: `index.html`. Open it in any browser.
+- **Mockup and invented examples.** Start at [index.html](index.html).
+- **Founder demo, sign-in or persistence.** Start with [app.js](app/src/app.js), then [auth](app/src/auth.js), [local store](app/src/store.js) or [cloud adapter](app/src/cloud.js) for the relevant path. The founder demo has browser storage. Verify cloud wiring before making claims about remote sync.
+- **Spending calculations or sample data.** Open [engine](app/src/engine.js) or [sample receipts](app/src/sample.js). Sample shops and figures are invented.
+- **Product decisions, policy or production status.** Consult the [source project](https://github.com/stackmochris/hosti-home) and check the relevant dated record. The demo does not establish production availability.
